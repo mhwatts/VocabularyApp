@@ -1,0 +1,87 @@
+/* Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Vocabulary App Components using Tailwind */
+@layer components {
+  /* Loading Spinner */
+  .loading-spinner {
+    @apply w-5 h-5 border-2 border-transparent border-t-current rounded-full animate-spin;
+  }
+
+  /* Custom Button Styles */
+  .btn-primary {
+    @apply w-full py-3.5 px-5 bg-gradient-to-r from-primary-500 to-secondary-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 flex items-center justify-center gap-2;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    @apply -translate-y-0.5 shadow-lg;
+  }
+
+  .btn-primary:disabled {
+    @apply opacity-60 cursor-not-allowed transform-none;
+  }
+
+  .btn-secondary {
+    @apply py-2.5 px-5 bg-gray-50 text-gray-600 border border-gray-300 rounded-md text-sm font-medium cursor-pointer transition-all duration-200;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-gray-100 border-gray-400;
+  }
+
+  .link-button {
+    @apply bg-transparent border-none text-primary-500 underline cursor-pointer p-0 m-0;
+  }
+
+  .link-button:hover {
+    @apply text-primary-600;
+  }
+
+  /* Form Styles */
+  .form-group {
+    @apply mb-6;
+  }
+
+  .form-group label {
+    @apply block mb-2 font-semibold text-gray-700;
+  }
+
+  .form-control {
+    @apply w-full py-3 px-4 border-2 border-gray-200 rounded-lg text-base transition-all duration-300 bg-white;
+  }
+
+  .form-control:focus {
+    @apply outline-none border-primary-500 ring-4 ring-primary-500/10;
+  }
+
+  .form-control.error {
+    @apply border-red-500 ring-4 ring-red-500/10;
+  }
+
+  /* Message Styles */
+  .error-message {
+    @apply text-red-600 text-sm mt-1;
+  }
+
+  .global-error {
+    @apply bg-red-50 border border-red-200 text-red-800 p-3 rounded-md mb-4;
+  }
+
+  .success-message {
+    @apply bg-green-50 border border-green-200 text-green-800 p-3 rounded-md mb-4;
+  }
+
+  /* Card Containers */
+  .card-container {
+    @apply bg-white rounded-xl p-8 shadow-xl m-4;
+  }
+}
+
+/* Global Base Styles */
+@layer base {
+  body {
+    @apply font-sans bg-gradient-to-br from-primary-500 to-secondary-500 min-h-screen m-0 p-0;
+  }
+}
