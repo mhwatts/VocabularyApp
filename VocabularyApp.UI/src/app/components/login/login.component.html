@@ -1,0 +1,55 @@
+<div class="min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl p-12 shadow-2xl w-full max-w-md animate-[slideUp_0.6s_ease-out]">
+    <h2 class="text-center mb-2 text-gray-800 text-3xl font-bold">Welcome Back</h2>
+    <p class="text-center text-gray-600 mb-8 text-sm">Sign in to your Vocabulary App account</p>
+
+    <!-- Success Message -->
+    <div class="success-message" *ngIf="successMessage">
+      {{ successMessage }}
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="mb-6">
+      <!-- Username Field -->
+      <div class="form-group">
+        <label for="username" class="block mb-2 font-semibold text-gray-700">Username</label>
+        <input type="text" id="username" formControlName="username" class="form-control"
+          [class.error]="loginForm.get('username')?.invalid && loginForm.get('username')?.touched"
+          placeholder="Enter your username" />
+        <div class="error-message" *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
+          <span *ngIf="loginForm.get('username')?.errors?.['required']">Username is required</span>
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label for="password" class="block mb-2 font-semibold text-gray-700">Password</label>
+        <app-password-input id="password" placeholder="Enter your password" inputClass="form-control pr-10"
+          formControlName="password"></app-password-input>
+
+        <div class="error-message" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+          <span *ngIf="loginForm.get('password')?.errors?.['required']">Password is required</span>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="global-error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="btn-primary" [disabled]="!loginForm.valid || isLoading">
+        <span *ngIf="isLoading" class="loading-spinner"></span>
+        {{ isLoading ? 'Signing In...' : 'Sign In' }}
+      </button>
+    </form>
+
+    <!-- Signup Link -->
+    <div class="text-center pt-4 border-t border-gray-200">
+      <p class="text-gray-600 text-sm">Don't have an account?
+        <button type="button" class="link-button" (click)="navigateToSignup()">
+          Create one here
+        </button>
+      </p>
+    </div>
+  </div>
+</div>
