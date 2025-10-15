@@ -49,7 +49,11 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<WordDefinition>(entity =>
         {
             entity.HasKey(e => e.Id);
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> fork/feat/remove-userword-fields
             // Foreign key relationships
             entity.HasOne(e => e.Word)
                 .WithMany(w => w.WordDefinitions)
@@ -69,7 +73,11 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<UserWord>(entity =>
         {
             entity.HasKey(e => e.Id);
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> fork/feat/remove-userword-fields
             // Foreign key relationships
             entity.HasOne(e => e.User)
                 .WithMany(u => u.UserWords)
@@ -81,6 +89,7 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.WordId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+<<<<<<< HEAD
             entity.HasOne(e => e.PartOfSpeech)
                 .WithMany(p => p.UserWords)
                 .HasForeignKey(e => e.PartOfSpeechId)
@@ -88,13 +97,20 @@ public class ApplicationDbContext : DbContext
 
             // Ensure unique combination - each user can only have one entry per word+part-of-speech
             entity.HasIndex(e => new { e.UserId, e.WordId, e.PartOfSpeechId }).IsUnique();
+=======
+            // Removed PartOfSpeech foreign key and composite index (no longer storing PartOfSpeech per user word)
+>>>>>>> fork/feat/remove-userword-fields
         });
 
         // Configure SampleSentence entity
         modelBuilder.Entity<SampleSentence>(entity =>
         {
             entity.HasKey(e => e.Id);
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> fork/feat/remove-userword-fields
             entity.HasOne(e => e.User)
                 .WithMany(u => u.SampleSentences)
                 .HasForeignKey(e => e.UserId)
@@ -110,7 +126,11 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<QuizResult>(entity =>
         {
             entity.HasKey(e => e.Id);
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> fork/feat/remove-userword-fields
             entity.HasOne(e => e.User)
                 .WithMany(u => u.QuizResults)
                 .HasForeignKey(e => e.UserId)
@@ -129,7 +149,11 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<ChatHistory>(entity =>
         {
             entity.HasKey(e => e.Id);
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> fork/feat/remove-userword-fields
             entity.HasOne(e => e.User)
                 .WithMany(u => u.ChatHistories)
                 .HasForeignKey(e => e.UserId)
@@ -146,7 +170,11 @@ public class ApplicationDbContext : DbContext
     private static void SeedPartsOfSpeech(ModelBuilder modelBuilder)
     {
         var seedDate = new DateTime(2025, 10, 4, 20, 0, 0, DateTimeKind.Utc);
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> fork/feat/remove-userword-fields
         modelBuilder.Entity<PartOfSpeech>().HasData(
             new PartOfSpeech { Id = 1, Name = "Noun", Abbreviation = "n.", CreatedAt = seedDate },
             new PartOfSpeech { Id = 2, Name = "Verb", Abbreviation = "v.", CreatedAt = seedDate },

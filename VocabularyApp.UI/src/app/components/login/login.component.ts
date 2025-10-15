@@ -1,13 +1,21 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+<<<<<<< HEAD
+=======
+import { PasswordInputComponent } from '../password-input/password-input.component';
+>>>>>>> fork/feat/remove-userword-fields
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
+<<<<<<< HEAD
   imports: [CommonModule, ReactiveFormsModule],
+=======
+  imports: [CommonModule, ReactiveFormsModule, PasswordInputComponent],
+>>>>>>> fork/feat/remove-userword-fields
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
@@ -16,6 +24,10 @@ export class LoginComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+<<<<<<< HEAD
+=======
+  passwordVisible = false;
+>>>>>>> fork/feat/remove-userword-fields
 
   constructor(
     private fb: FormBuilder,
@@ -70,4 +82,11 @@ export class LoginComponent implements OnInit {
   navigateToSignup(): void {
     this.router.navigate(['/signup']);
   }
+<<<<<<< HEAD
+=======
+
+  togglePasswordVisibility(): void {
+    this.passwordVisible = !this.passwordVisible;
+  }
+>>>>>>> fork/feat/remove-userword-fields
 }

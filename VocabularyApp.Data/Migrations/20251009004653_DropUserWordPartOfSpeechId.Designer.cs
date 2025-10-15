@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VocabularyApp.Data;
 
@@ -11,9 +12,11 @@ using VocabularyApp.Data;
 namespace VocabularyApp.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251009004653_DropUserWordPartOfSpeechId")]
+    partial class DropUserWordPartOfSpeechId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -274,30 +277,13 @@ namespace VocabularyApp.Data.Migrations
                     b.Property<int>("CorrectAnswers")
                         .HasColumnType("int");
 
-<<<<<<< HEAD
-                    b.Property<string>("CustomDefinition")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<int>("DifficultyLevel")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsFavorite")
-                        .HasColumnType("bit");
-
-=======
->>>>>>> fork/feat/remove-userword-fields
                     b.Property<DateTime?>("LastCorrectAt")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("LastReviewedAt")
                         .HasColumnType("datetime2");
 
-<<<<<<< HEAD
-                    b.Property<int>("PartOfSpeechId")
-=======
                     b.Property<int?>("PartOfSpeechId")
->>>>>>> fork/feat/remove-userword-fields
                         .HasColumnType("int");
 
                     b.Property<string>("PersonalNotes")
@@ -317,16 +303,9 @@ namespace VocabularyApp.Data.Migrations
 
                     b.HasIndex("PartOfSpeechId");
 
-<<<<<<< HEAD
-                    b.HasIndex("WordId");
-
-                    b.HasIndex("UserId", "WordId", "PartOfSpeechId")
-                        .IsUnique();
-=======
                     b.HasIndex("UserId");
 
                     b.HasIndex("WordId");
->>>>>>> fork/feat/remove-userword-fields
 
                     b.ToTable("UserWords");
                 });
@@ -452,17 +431,9 @@ namespace VocabularyApp.Data.Migrations
 
             modelBuilder.Entity("VocabularyApp.Data.Models.UserWord", b =>
                 {
-<<<<<<< HEAD
-                    b.HasOne("VocabularyApp.Data.Models.PartOfSpeech", "PartOfSpeech")
-                        .WithMany("UserWords")
-                        .HasForeignKey("PartOfSpeechId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-=======
                     b.HasOne("VocabularyApp.Data.Models.PartOfSpeech", null)
                         .WithMany("UserWords")
                         .HasForeignKey("PartOfSpeechId");
->>>>>>> fork/feat/remove-userword-fields
 
                     b.HasOne("VocabularyApp.Data.Models.User", "User")
                         .WithMany("UserWords")
@@ -476,11 +447,6 @@ namespace VocabularyApp.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-<<<<<<< HEAD
-                    b.Navigation("PartOfSpeech");
-
-=======
->>>>>>> fork/feat/remove-userword-fields
                     b.Navigation("User");
 
                     b.Navigation("Word");

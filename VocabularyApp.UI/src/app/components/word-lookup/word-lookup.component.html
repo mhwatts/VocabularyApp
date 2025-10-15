@@ -1,11 +1,26 @@
 <!-- Word Lookup Component -->
 <div class="min-h-screen bg-gradient-to-br from-primary-500 to-secondary-500 p-6">
   <div class="max-w-4xl mx-auto">
+<<<<<<< HEAD
     
     <!-- Header -->
     <div class="text-center mb-8">
       <h1 class="text-3xl font-bold text-white mb-2">Vocabulary Builder</h1>
       <p class="text-white/80">Search your vocabulary or discover new words</p>
+=======
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-white mb-2">Vocabulary Builder</h1>
+        <p class="text-white/80">Search your vocabulary or discover new words</p>
+      </div>
+      <div>
+        <button (click)="backToDashboard()" class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg">
+          ← Back to Dashboard
+        </button>
+      </div>
+>>>>>>> fork/feat/remove-userword-fields
     </div>
 
     <!-- Search Section -->
@@ -13,6 +28,7 @@
       <div class="relative">
         <!-- Search Input -->
         <div class="flex gap-3">
+<<<<<<< HEAD
           <input
             type="text"
             [(ngModel)]="searchTerm"
@@ -25,12 +41,20 @@
             [disabled]="!searchTerm.trim() || isLoading"
             class="px-6 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors duration-200"
           >
+=======
+          <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchInput()"
+            placeholder="Search for any word..."
+            class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none text-lg" />
+          <button (click)="onSearchSubmit()" [disabled]="!searchTerm.trim() || isLoading"
+            class="px-6 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors duration-200">
+>>>>>>> fork/feat/remove-userword-fields
             <span *ngIf="isLoading" class="inline-block animate-spin mr-2">⟳</span>
             {{ isLoading ? 'Searching...' : 'Search' }}
           </button>
         </div>
 
         <!-- Autocomplete Dropdown -->
+<<<<<<< HEAD
         <div 
           *ngIf="suggestions.length > 0" 
           class="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
@@ -44,6 +68,16 @@
               [class.bg-blue-100]="selectedSuggestionIndex === i"
               (click)="selectSuggestion(suggestion)"
             >
+=======
+        <div *ngIf="suggestions.length > 0"
+          class="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+          <!-- User's Vocabulary Section -->
+          <div *ngIf="hasExistingSuggestions()" class="p-3 bg-gray-50 border-b">
+            <div class="text-sm font-medium text-gray-700 mb-2">📚 Your Vocabulary</div>
+            <div *ngFor="let suggestion of suggestions; let i = index"
+              class="suggestion-item p-3 hover:bg-blue-50 cursor-pointer rounded-md transition-colors duration-150"
+              [class.bg-blue-100]="selectedSuggestionIndex === i" (click)="selectSuggestion(suggestion)">
+>>>>>>> fork/feat/remove-userword-fields
               <div *ngIf="suggestion.type === 'existing'" class="flex items-center justify-between">
                 <div>
                   <span class="font-medium text-gray-800">{{ suggestion.word }}</span>
@@ -57,6 +91,7 @@
 
           <!-- New Word Search Section -->
           <div class="p-3">
+<<<<<<< HEAD
             <div 
               *ngFor="let suggestion of suggestions; let i = index"
               (click)="selectSuggestion(suggestion)"
@@ -66,6 +101,12 @@
                 class="suggestion-item p-3 hover:bg-gray-50 cursor-pointer rounded-md transition-colors duration-150 flex items-center justify-between"
                 [class.bg-gray-100]="selectedSuggestionIndex === i"
               >
+=======
+            <div *ngFor="let suggestion of suggestions; let i = index" (click)="selectSuggestion(suggestion)">
+              <div *ngIf="suggestion.type === 'new-search'"
+                class="suggestion-item p-3 hover:bg-gray-50 cursor-pointer rounded-md transition-colors duration-150 flex items-center justify-between"
+                [class.bg-gray-100]="selectedSuggestionIndex === i">
+>>>>>>> fork/feat/remove-userword-fields
                 <span class="text-gray-700">🔍 Search for "<strong>{{ suggestion.word }}</strong>"</span>
                 <span class="text-xs text-primary-600 font-medium">{{ suggestion.action }}</span>
               </div>
@@ -90,14 +131,24 @@
             <p *ngIf="currentWord.phonetic" class="text-lg text-gray-500 mt-1">{{ currentWord.phonetic }}</p>
           </div>
           <div class="flex gap-3">
+<<<<<<< HEAD
             <button class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200">
               + Add to My Vocabulary
             </button>
             <button class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors duration-200">
+=======
+            <button
+              class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200">
+              + Add to My Vocabulary
+            </button>
+            <button
+              class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors duration-200">
+>>>>>>> fork/feat/remove-userword-fields
               🔖 Save for Later
             </button>
           </div>
         </div>
+<<<<<<< HEAD
         
         <!-- Source Indicator -->
         <div class="mt-3">
@@ -117,6 +168,21 @@
             *ngIf="currentWord.source === 'user'" 
             class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
           >
+=======
+
+        <!-- Source Indicator -->
+        <div class="mt-3">
+          <span *ngIf="currentWord.source === 'canonical'"
+            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            📚 From our dictionary
+          </span>
+          <span *ngIf="currentWord.source === 'external'"
+            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            🌐 Newly discovered word
+          </span>
+          <span *ngIf="currentWord.source === 'user'"
+            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+>>>>>>> fork/feat/remove-userword-fields
             ✅ In your vocabulary
           </span>
         </div>
@@ -128,8 +194,12 @@
           <!-- Part of Speech Header -->
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-xl font-bold text-gray-800 capitalize">
+<<<<<<< HEAD
               <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
                     [ngClass]="{
+=======
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium" [ngClass]="{
+>>>>>>> fork/feat/remove-userword-fields
                       'bg-blue-100 text-blue-800': group.partOfSpeech === 'noun',
                       'bg-green-100 text-green-800': group.partOfSpeech === 'verb',
                       'bg-purple-100 text-purple-800': group.partOfSpeech === 'adjective',
@@ -144,10 +214,18 @@
 
           <!-- Primary Definitions (Always Visible) -->
           <div class="space-y-4 ml-4">
+<<<<<<< HEAD
             <div *ngFor="let definition of group.primaryDefinitions; let i = index" 
                  class="definition-item border-l-4 border-gray-200 pl-4">
               <div class="flex items-start">
                 <span class="inline-flex items-center justify-center w-6 h-6 bg-gray-100 text-gray-600 text-sm font-medium rounded-full mr-3 mt-0.5">
+=======
+            <div *ngFor="let definition of group.primaryDefinitions; let i = index"
+              class="definition-item border-l-4 border-gray-200 pl-4">
+              <div class="flex items-start">
+                <span
+                  class="inline-flex items-center justify-center w-6 h-6 bg-gray-100 text-gray-600 text-sm font-medium rounded-full mr-3 mt-0.5">
+>>>>>>> fork/feat/remove-userword-fields
                   {{ i + 1 }}
                 </span>
                 <div class="flex-1">
@@ -166,10 +244,15 @@
 
           <!-- Expandable Section -->
           <div *ngIf="group.definitions.length > 2" class="ml-4 mt-4">
+<<<<<<< HEAD
             <button 
               (click)="toggleExpandGroup(group)"
               class="text-primary-600 hover:text-primary-700 font-medium text-sm transition-colors duration-200"
             >
+=======
+            <button (click)="toggleExpandGroup(group)"
+              class="text-primary-600 hover:text-primary-700 font-medium text-sm transition-colors duration-200">
+>>>>>>> fork/feat/remove-userword-fields
               <span *ngIf="!group.isExpanded">
                 ▼ Show {{ group.definitions.length - 2 }} more definitions
               </span>
@@ -180,10 +263,18 @@
 
             <!-- Expanded Definitions -->
             <div *ngIf="group.isExpanded" class="mt-4 space-y-4">
+<<<<<<< HEAD
               <div *ngFor="let definition of group.definitions.slice(2); let i = index" 
                    class="definition-item border-l-4 border-gray-200 pl-4">
                 <div class="flex items-start">
                   <span class="inline-flex items-center justify-center w-6 h-6 bg-gray-100 text-gray-600 text-sm font-medium rounded-full mr-3 mt-0.5">
+=======
+              <div *ngFor="let definition of group.definitions.slice(2); let i = index"
+                class="definition-item border-l-4 border-gray-200 pl-4">
+                <div class="flex items-start">
+                  <span
+                    class="inline-flex items-center justify-center w-6 h-6 bg-gray-100 text-gray-600 text-sm font-medium rounded-full mr-3 mt-0.5">
+>>>>>>> fork/feat/remove-userword-fields
                     {{ i + 3 }}
                   </span>
                   <div class="flex-1">
@@ -208,8 +299,17 @@
     <div *ngIf="!currentWord && !isLoading" class="bg-white rounded-2xl p-12 shadow-xl text-center">
       <div class="text-6xl mb-4">📚</div>
       <h3 class="text-xl font-semibold text-gray-800 mb-2">Ready to explore words?</h3>
+<<<<<<< HEAD
       <p class="text-gray-600">Search for a word above to see its definitions, examples, and add it to your vocabulary.</p>
     </div>
 
   </div>
 </div>
+=======
+      <p class="text-gray-600">Search for a word above to see its definitions, examples, and add it to your vocabulary.
+      </p>
+    </div>
+
+  </div>
+</div>
+>>>>>>> fork/feat/remove-userword-fields

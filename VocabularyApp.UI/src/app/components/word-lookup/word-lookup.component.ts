@@ -2,6 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+<<<<<<< HEAD
+=======
+import { Router } from '@angular/router';
+>>>>>>> fork/feat/remove-userword-fields
 import { WordLookupResult, PartOfSpeechGroup, SearchSuggestion, POS_PRIORITY } from '../../models/word-lookup.model';
 
 @Component({
@@ -17,6 +21,7 @@ export class WordLookupComponent implements OnInit {
   selectedSuggestionIndex = -1;
   isLoading = false;
   errorMessage = '';
+<<<<<<< HEAD
   
   currentWord: WordLookupResult | null = null;
   sortedGroups: PartOfSpeechGroup[] = [];
@@ -24,6 +29,19 @@ export class WordLookupComponent implements OnInit {
   constructor(private apiService: ApiService) {}
 
   ngOnInit(): void {}
+=======
+
+  currentWord: WordLookupResult | null = null;
+  sortedGroups: PartOfSpeechGroup[] = [];
+
+  constructor(private apiService: ApiService, private router: Router) { }
+
+  backToDashboard(): void {
+    this.router.navigate(['/dashboard']);
+  }
+
+  ngOnInit(): void { }
+>>>>>>> fork/feat/remove-userword-fields
 
   onSearchInput(): void {
     if (this.searchTerm.length >= 2) {
@@ -69,6 +87,7 @@ export class WordLookupComponent implements OnInit {
   searchNewWord(word: string): void {
     this.isLoading = true;
     this.errorMessage = '';
+<<<<<<< HEAD
     
     // TODO: Implement the search hierarchy:
     // 1. Check canonical dictionary
@@ -77,6 +96,78 @@ export class WordLookupComponent implements OnInit {
     
     console.log('Searching for new word:', word);
     this.isLoading = false;
+=======
+    this.currentWord = null;
+    // Use the lookup endpoint which returns full definitions
+    this.apiService.get<any>(`/words/lookup/${encodeURIComponent(word)}`).subscribe({
+      next: (res) => {
+        try {
+          if (res && (res as any).success && (res as any).data) {
+            // Backend wraps WordLookupResponse inside ApiResponse.Data
+            const lookupResp = (res as any).data; // WordLookupResponse from backend
+            const wordDto = lookupResp.word; // WordDto
+            if (wordDto) {
+              // Map WordDto -> UI WordLookupResult shape
+              const mapped: WordLookupResult = {
+                word: wordDto.text || word,
+                phonetic: wordDto.pronunciation,
+                source: lookupResp.wasFoundInCache ? 'user' : 'canonical',
+                partOfSpeechGroups: []
+              } as any;
+
+              // Group definitions by part of speech
+              const groupsMap: Record<string, PartOfSpeechGroup> = {};
+              for (const def of (wordDto.definitions || [])) {
+                const pos = (def.partOfSpeech || 'unknown').toLowerCase();
+                if (!groupsMap[pos]) {
+                  groupsMap[pos] = {
+                    partOfSpeech: pos,
+                    priority: (POS_PRIORITY as any)[pos] ?? 99,
+                    definitions: [],
+                    isExpanded: false,
+                    primaryDefinitions: []
+                  } as PartOfSpeechGroup;
+                }
+
+                const d = {
+                  id: def.id,
+                  definition: def.definition,
+                  example: def.example,
+                  synonyms: def.synonyms,
+                  antonyms: def.antonyms
+                } as any;
+
+                groupsMap[pos].definitions.push(d);
+              }
+
+              // Build groups array and compute primaryDefinitions
+              mapped.partOfSpeechGroups = Object.values(groupsMap).map(g => {
+                g.primaryDefinitions = this.prioritizeDefinitions(g.definitions);
+                return g;
+              });
+
+              this.currentWord = mapped;
+              this.processWordResult(this.currentWord);
+            } else {
+              this.errorMessage = lookupResp.errorMessage || 'No definitions found.';
+            }
+          } else {
+            this.errorMessage = (res as any).errorMessage || 'No definitions found.';
+          }
+        } catch (ex) {
+          console.error('Mapping error:', ex);
+          this.errorMessage = 'Failed to process word definition.';
+        }
+
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('API error searching word:', err);
+        this.errorMessage = err.error?.errorMessage || 'Failed to fetch word definition.';
+        this.isLoading = false;
+      }
+    });
+>>>>>>> fork/feat/remove-userword-fields
   }
 
   onSearchSubmit(): void {
@@ -115,7 +206,11 @@ export class WordLookupComponent implements OnInit {
         // Prioritize definitions with examples
         if (a.example && !b.example) return -1;
         if (!a.example && b.example) return 1;
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> fork/feat/remove-userword-fields
         // Then by length (shorter = more common)
         return a.definition.length - b.definition.length;
       })
