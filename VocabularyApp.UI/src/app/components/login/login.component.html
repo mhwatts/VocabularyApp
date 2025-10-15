@@ -12,14 +12,9 @@
       <!-- Username Field -->
       <div class="form-group">
         <label for="username" class="block mb-2 font-semibold text-gray-700">Username</label>
-        <input
-          type="text"
-          id="username"
-          formControlName="username"
-          class="form-control"
+        <input type="text" id="username" formControlName="username" class="form-control"
           [class.error]="loginForm.get('username')?.invalid && loginForm.get('username')?.touched"
-          placeholder="Enter your username"
-        />
+          placeholder="Enter your username" />
         <div class="error-message" *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
           <span *ngIf="loginForm.get('username')?.errors?.['required']">Username is required</span>
         </div>
@@ -28,14 +23,9 @@
       <!-- Password Field -->
       <div class="form-group">
         <label for="password" class="block mb-2 font-semibold text-gray-700">Password</label>
-        <input
-          type="password"
-          id="password"
-          formControlName="password"
-          class="form-control"
-          [class.error]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
-          placeholder="Enter your password"
-        />
+        <app-password-input id="password" placeholder="Enter your password" inputClass="form-control pr-10"
+          formControlName="password"></app-password-input>
+
         <div class="error-message" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
           <span *ngIf="loginForm.get('password')?.errors?.['required']">Password is required</span>
         </div>
@@ -47,11 +37,7 @@
       </div>
 
       <!-- Submit Button -->
-      <button
-        type="submit"
-        class="btn-primary"
-        [disabled]="!loginForm.valid || isLoading"
-      >
+      <button type="submit" class="btn-primary" [disabled]="!loginForm.valid || isLoading">
         <span *ngIf="isLoading" class="loading-spinner"></span>
         {{ isLoading ? 'Signing In...' : 'Sign In' }}
       </button>
@@ -59,7 +45,7 @@
 
     <!-- Signup Link -->
     <div class="text-center pt-4 border-t border-gray-200">
-      <p class="text-gray-600 text-sm">Don't have an account? 
+      <p class="text-gray-600 text-sm">Don't have an account?
         <button type="button" class="link-button" (click)="navigateToSignup()">
           Create one here
         </button>

@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { PasswordInputComponent } from '../password-input/password-input.component';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, PasswordInputComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
@@ -16,6 +17,7 @@ export class LoginComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+  passwordVisible = false;
 
   constructor(
     private fb: FormBuilder,
@@ -69,5 +71,9 @@ export class LoginComponent implements OnInit {
 
   navigateToSignup(): void {
     this.router.navigate(['/signup']);
+  }
+
+  togglePasswordVisibility(): void {
+    this.passwordVisible = !this.passwordVisible;
   }
 }

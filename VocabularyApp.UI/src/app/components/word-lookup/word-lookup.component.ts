@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+import { Router } from '@angular/router';
 import { WordLookupResult, PartOfSpeechGroup, SearchSuggestion, POS_PRIORITY } from '../../models/word-lookup.model';
 
 @Component({
@@ -17,13 +18,17 @@ export class WordLookupComponent implements OnInit {
   selectedSuggestionIndex = -1;
   isLoading = false;
   errorMessage = '';
-  
+
   currentWord: WordLookupResult | null = null;
   sortedGroups: PartOfSpeechGroup[] = [];
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService, private router: Router) { }
 
-  ngOnInit(): void {}
+  backToDashboard(): void {
+    this.router.navigate(['/dashboard']);
+  }
+
+  ngOnInit(): void { }
 
   onSearchInput(): void {
     if (this.searchTerm.length >= 2) {
@@ -69,14 +74,76 @@ export class WordLookupComponent implements OnInit {
   searchNewWord(word: string): void {
     this.isLoading = true;
     this.errorMessage = '';
-    
-    // TODO: Implement the search hierarchy:
-    // 1. Check canonical dictionary
-    // 2. Call external API if not found
-    // 3. Show spelling suggestions if API fails
-    
-    console.log('Searching for new word:', word);
-    this.isLoading = false;
+    this.currentWord = null;
+    // Use the lookup endpoint which returns full definitions
+    this.apiService.get<any>(`/words/lookup/${encodeURIComponent(word)}`).subscribe({
+      next: (res) => {
+        try {
+          if (res && (res as any).success && (res as any).data) {
+            // Backend wraps WordLookupResponse inside ApiResponse.Data
+            const lookupResp = (res as any).data; // WordLookupResponse from backend
+            const wordDto = lookupResp.word; // WordDto
+            if (wordDto) {
+              // Map WordDto -> UI WordLookupResult shape
+              const mapped: WordLookupResult = {
+                word: wordDto.text || word,
+                phonetic: wordDto.pronunciation,
+                source: lookupResp.wasFoundInCache ? 'user' : 'canonical',
+                partOfSpeechGroups: []
+              } as any;
+
+              // Group definitions by part of speech
+              const groupsMap: Record<string, PartOfSpeechGroup> = {};
+              for (const def of (wordDto.definitions || [])) {
+                const pos = (def.partOfSpeech || 'unknown').toLowerCase();
+                if (!groupsMap[pos]) {
+                  groupsMap[pos] = {
+                    partOfSpeech: pos,
+                    priority: (POS_PRIORITY as any)[pos] ?? 99,
+                    definitions: [],
+                    isExpanded: false,
+                    primaryDefinitions: []
+                  } as PartOfSpeechGroup;
+                }
+
+                const d = {
+                  id: def.id,
+                  definition: def.definition,
+                  example: def.example,
+                  synonyms: def.synonyms,
+                  antonyms: def.antonyms
+                } as any;
+
+                groupsMap[pos].definitions.push(d);
+              }
+
+              // Build groups array and compute primaryDefinitions
+              mapped.partOfSpeechGroups = Object.values(groupsMap).map(g => {
+                g.primaryDefinitions = this.prioritizeDefinitions(g.definitions);
+                return g;
+              });
+
+              this.currentWord = mapped;
+              this.processWordResult(this.currentWord);
+            } else {
+              this.errorMessage = lookupResp.errorMessage || 'No definitions found.';
+            }
+          } else {
+            this.errorMessage = (res as any).errorMessage || 'No definitions found.';
+          }
+        } catch (ex) {
+          console.error('Mapping error:', ex);
+          this.errorMessage = 'Failed to process word definition.';
+        }
+
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('API error searching word:', err);
+        this.errorMessage = err.error?.errorMessage || 'Failed to fetch word definition.';
+        this.isLoading = false;
+      }
+    });
   }
 
   onSearchSubmit(): void {
@@ -115,7 +182,6 @@ export class WordLookupComponent implements OnInit {
         // Prioritize definitions with examples
         if (a.example && !b.example) return -1;
         if (!a.example && b.example) return 1;
-        
         // Then by length (shorter = more common)
         return a.definition.length - b.definition.length;
       })
