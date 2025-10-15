@@ -2,10 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
-<<<<<<< HEAD
-=======
 import { Router } from '@angular/router';
->>>>>>> fork/feat/remove-userword-fields
 import { WordLookupResult, PartOfSpeechGroup, SearchSuggestion, POS_PRIORITY } from '../../models/word-lookup.model';
 
 @Component({
@@ -21,15 +18,6 @@ export class WordLookupComponent implements OnInit {
   selectedSuggestionIndex = -1;
   isLoading = false;
   errorMessage = '';
-<<<<<<< HEAD
-  
-  currentWord: WordLookupResult | null = null;
-  sortedGroups: PartOfSpeechGroup[] = [];
-
-  constructor(private apiService: ApiService) {}
-
-  ngOnInit(): void {}
-=======
 
   currentWord: WordLookupResult | null = null;
   sortedGroups: PartOfSpeechGroup[] = [];
@@ -41,7 +29,6 @@ export class WordLookupComponent implements OnInit {
   }
 
   ngOnInit(): void { }
->>>>>>> fork/feat/remove-userword-fields
 
   onSearchInput(): void {
     if (this.searchTerm.length >= 2) {
@@ -87,16 +74,6 @@ export class WordLookupComponent implements OnInit {
   searchNewWord(word: string): void {
     this.isLoading = true;
     this.errorMessage = '';
-<<<<<<< HEAD
-    
-    // TODO: Implement the search hierarchy:
-    // 1. Check canonical dictionary
-    // 2. Call external API if not found
-    // 3. Show spelling suggestions if API fails
-    
-    console.log('Searching for new word:', word);
-    this.isLoading = false;
-=======
     this.currentWord = null;
     // Use the lookup endpoint which returns full definitions
     this.apiService.get<any>(`/words/lookup/${encodeURIComponent(word)}`).subscribe({
@@ -167,7 +144,6 @@ export class WordLookupComponent implements OnInit {
         this.isLoading = false;
       }
     });
->>>>>>> fork/feat/remove-userword-fields
   }
 
   onSearchSubmit(): void {
@@ -206,11 +182,6 @@ export class WordLookupComponent implements OnInit {
         // Prioritize definitions with examples
         if (a.example && !b.example) return -1;
         if (!a.example && b.example) return 1;
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> fork/feat/remove-userword-fields
         // Then by length (shorter = more common)
         return a.definition.length - b.definition.length;
       })
