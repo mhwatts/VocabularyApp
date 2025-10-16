@@ -26,5 +26,16 @@ public class UserWord
     public virtual User User { get; set; } = null!;
     public virtual Word Word { get; set; } = null!;
     // Removed PartOfSpeech navigation
+
+    public int PartOfSpeechId { get; set; }
+
+    [StringLength(1000)]
+    public string? CustomDefinition { get; set; } // User's personalized definition (optional)
+
+
+    public bool IsFavorite { get; set; } = false;
+    public int DifficultyLevel { get; set; } = 1; // 1-5 scale for spaced repetition
+
+    public virtual PartOfSpeech PartOfSpeech { get; set; } = null!;
     public virtual ICollection<SampleSentence> SampleSentences { get; set; } = new List<SampleSentence>();
 }

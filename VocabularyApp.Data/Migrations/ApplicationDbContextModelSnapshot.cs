@@ -274,6 +274,16 @@ namespace VocabularyApp.Data.Migrations
                     b.Property<int>("CorrectAnswers")
                         .HasColumnType("int");
 
+                    b.Property<string>("CustomDefinition")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("DifficultyLevel")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsFavorite")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("LastCorrectAt")
                         .HasColumnType("datetime2");
 
@@ -303,6 +313,11 @@ namespace VocabularyApp.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.HasIndex("WordId");
+
+                    b.HasIndex("WordId");
+
+                    b.HasIndex("UserId", "WordId", "PartOfSpeechId")
+                        .IsUnique();
 
                     b.ToTable("UserWords");
                 });
@@ -431,6 +446,11 @@ namespace VocabularyApp.Data.Migrations
                     b.HasOne("VocabularyApp.Data.Models.PartOfSpeech", null)
                         .WithMany("UserWords")
                         .HasForeignKey("PartOfSpeechId");
+                    b.HasOne("VocabularyApp.Data.Models.PartOfSpeech", "PartOfSpeech")
+                        .WithMany("UserWords")
+                        .HasForeignKey("PartOfSpeechId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("VocabularyApp.Data.Models.User", "User")
                         .WithMany("UserWords")
@@ -443,6 +463,8 @@ namespace VocabularyApp.Data.Migrations
                         .HasForeignKey("WordId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("PartOfSpeech");
 
                     b.Navigation("User");
 
@@ -497,7 +519,6 @@ namespace VocabularyApp.Data.Migrations
 
                     b.Navigation("WordDefinitions");
                 });
-#pragma warning restore 612, 618
         }
     }
 }

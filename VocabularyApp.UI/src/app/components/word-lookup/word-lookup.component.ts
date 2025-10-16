@@ -144,6 +144,14 @@ export class WordLookupComponent implements OnInit {
         this.isLoading = false;
       }
     });
+
+    // TODO: Implement the search hierarchy:
+    // 1. Check canonical dictionary
+    // 2. Call external API if not found
+    // 3. Show spelling suggestions if API fails
+
+    console.log('Searching for new word:', word);
+    this.isLoading = false;
   }
 
   onSearchSubmit(): void {
@@ -182,6 +190,7 @@ export class WordLookupComponent implements OnInit {
         // Prioritize definitions with examples
         if (a.example && !b.example) return -1;
         if (!a.example && b.example) return 1;
+
 
         // Then by length (shorter = more common)
         return a.definition.length - b.definition.length;

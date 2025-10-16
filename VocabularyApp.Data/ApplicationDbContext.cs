@@ -50,6 +50,7 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
 
+
             // Foreign key relationships
             entity.HasOne(e => e.Word)
                 .WithMany(w => w.WordDefinitions)
@@ -70,6 +71,7 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
 
+
             // Foreign key relationships
             entity.HasOne(e => e.User)
                 .WithMany(u => u.UserWords)
@@ -82,12 +84,20 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Removed PartOfSpeech foreign key and composite index (no longer storing PartOfSpeech per user word)
+            entity.HasOne(e => e.PartOfSpeech)
+                .WithMany(p => p.UserWords)
+                .HasForeignKey(e => e.PartOfSpeechId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Ensure unique combination - each user can only have one entry per word+part-of-speech
+            entity.HasIndex(e => new { e.UserId, e.WordId, e.PartOfSpeechId }).IsUnique();
         });
 
         // Configure SampleSentence entity
         modelBuilder.Entity<SampleSentence>(entity =>
         {
             entity.HasKey(e => e.Id);
+
 
             entity.HasOne(e => e.User)
                 .WithMany(u => u.SampleSentences)
@@ -104,6 +114,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<QuizResult>(entity =>
         {
             entity.HasKey(e => e.Id);
+
 
             entity.HasOne(e => e.User)
                 .WithMany(u => u.QuizResults)
@@ -124,6 +135,7 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
 
+
             entity.HasOne(e => e.User)
                 .WithMany(u => u.ChatHistories)
                 .HasForeignKey(e => e.UserId)
@@ -140,6 +152,7 @@ public class ApplicationDbContext : DbContext
     private static void SeedPartsOfSpeech(ModelBuilder modelBuilder)
     {
         var seedDate = new DateTime(2025, 10, 4, 20, 0, 0, DateTimeKind.Utc);
+
 
         modelBuilder.Entity<PartOfSpeech>().HasData(
             new PartOfSpeech { Id = 1, Name = "Noun", Abbreviation = "n.", CreatedAt = seedDate },
