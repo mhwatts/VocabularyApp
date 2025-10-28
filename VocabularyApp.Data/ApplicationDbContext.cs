@@ -14,7 +14,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Word> Words { get; set; }
     public DbSet<PartOfSpeech> PartsOfSpeech { get; set; }
     public DbSet<WordDefinition> WordDefinitions { get; set; }
-    public DbSet<UserWord> UserWords { get; set; }
+    public DbSet<UserWord> UserWords { get; set; } = null!;
     public DbSet<SampleSentence> SampleSentences { get; set; }
     public DbSet<QuizResult> QuizResults { get; set; }
     public DbSet<ChatHistory> ChatHistories { get; set; }

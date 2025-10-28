@@ -1,27 +1,11 @@
-using VocabularyApp.WebApi.DTOs;
+using VocabularyApp.WebApi.Models;
 
-namespace VocabularyApp.WebApi.Services;
-
-public interface IWordService
+namespace VocabularyApp.WebApi.Services
 {
-    /// <summary>
-    /// Looks up a word definition. Checks local database first, then external API if not found.
-    /// Stores new words in canonical dictionary for future use.
-    /// </summary>
-    Task<WordLookupResponse> LookupWordAsync(string word);
-    
-    /// <summary>
-    /// Gets a word from the local database only (no external API call)
-    /// </summary>
-    Task<WordDto?> GetWordFromCacheAsync(string word);
-    
-    /// <summary>
-    /// Searches for words in the local database by partial text match
-    /// </summary>
-    Task<List<WordDto>> SearchWordsAsync(string searchTerm, int maxResults = 50);
-    
-    /// <summary>
-    /// Gets word statistics for admin/analytics purposes
-    /// </summary>
-    Task<object> GetWordStatisticsAsync();
+    public interface IWordService
+    {
+        Task<ServiceResult<object>> LookupWordAsync(string term);
+        Task<ServiceResult<object>> AddWordAsync(AddWordRequest request);
+        Task<ServiceResult<object>> AddToVocabularyAsync(int userId, AddWordRequest request);
+    }
 }

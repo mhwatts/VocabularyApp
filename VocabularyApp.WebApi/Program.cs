@@ -54,6 +54,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<JwtHelper>();
 
 // Add HttpClient for external API calls
+builder.Services.AddHttpClient<IWordService, WordService>();
 builder.Services.AddHttpClient();
 
 // Add controllers
@@ -64,13 +65,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo 
-    { 
-        Title = "Vocabulary App API", 
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Vocabulary App API",
         Version = "v1",
         Description = "A comprehensive vocabulary building application with dictionary lookup, personal collections, and quiz functionality."
     });
-    
+
     // Configure JWT authentication in Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -80,7 +81,7 @@ builder.Services.AddSwaggerGen(c =>
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-    
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -110,7 +111,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 // Enable CORS
 app.UseCors("AllowAngular");

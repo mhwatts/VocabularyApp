@@ -1,268 +1,262 @@
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 using VocabularyApp.Data;
 using VocabularyApp.Data.Models;
 using VocabularyApp.WebApi.DTOs;
 using VocabularyApp.WebApi.DTOs.External;
+using VocabularyApp.WebApi.Models;
 
-namespace VocabularyApp.WebApi.Services;
-
-public class WordService : IWordService
+namespace VocabularyApp.WebApi.Services
 {
-    private readonly ApplicationDbContext _context;
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<WordService> _logger;
-    private const string DictionaryApiBaseUrl = "https://api.dictionaryapi.dev/api/v2/entries/en";
-
-    public WordService(ApplicationDbContext context, HttpClient httpClient, ILogger<WordService> logger)
+    public class WordService : IWordService
     {
-        _context = context;
-        _httpClient = httpClient;
-        _logger = logger;
-    }
+        private readonly ApplicationDbContext _db;
+        private readonly HttpClient _http;
+        private readonly ILogger<WordService> _logger;
 
-    public async Task<WordLookupResponse> LookupWordAsync(string word)
-    {
-        try
+        public WordService(ApplicationDbContext db, HttpClient http, ILogger<WordService> logger)
         {
-            // Normalize the word (lowercase, trim)
-            var normalizedWord = word.Trim().ToLowerInvariant();
-            
-            // First, check if word exists in our local database
-            var existingWord = await GetWordFromCacheAsync(normalizedWord);
-            if (existingWord != null)
+            _db = db;
+            _http = http;
+            _logger = logger;
+        }
+
+        public async Task<ServiceResult<object>> LookupWordAsync(string term)
+        {
+            if (string.IsNullOrWhiteSpace(term))
+                return ServiceResult<object>.Failure("Word is required.");
+
+            var normalized = term.Trim();
+            try
             {
-                _logger.LogInformation("Word '{Word}' found in local cache", word);
-                return new WordLookupResponse
+                // 1) Try local canonical dictionary first
+                var word = await _db.Words
+                    .Include(w => w.WordDefinitions)
+                        .ThenInclude(d => d.PartOfSpeech)
+                    .FirstOrDefaultAsync(w => w.Text == normalized);
+
+                if (word != null)
+                {
+                    var dto = MapToDto(word);
+                    var resp = new WordLookupResponse
+                    {
+                        Success = true,
+                        Word = dto,
+                        WasFoundInCache = true
+                    };
+                    return ServiceResult<object>.Success(resp);
+                }
+
+                // 2) Fetch from external dictionary API and persist
+                var apiUrl = $"https://api.dictionaryapi.dev/api/v2/entries/en/{Uri.EscapeDataString(normalized)}";
+                DictionaryApiResponse[]? apiData = null;
+                try
+                {
+                    apiData = await _http.GetFromJsonAsync<DictionaryApiResponse[]>(apiUrl);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "External dictionary API call failed for '{Word}'", normalized);
+                }
+
+                if (apiData == null || apiData.Length == 0)
+                {
+                    return ServiceResult<object>.Failure("No definitions found.");
+                }
+
+                var first = apiData[0];
+                // Create canonical Word
+                var newWord = new Word
+                {
+                    Text = first.Word ?? normalized,
+                    Pronunciation = first.Phonetic
+                };
+                _db.Words.Add(newWord);
+                await _db.SaveChangesAsync();
+
+                // Insert definitions
+                int order = 1;
+                foreach (var meaning in first.Meanings)
+                {
+                    // Map part of speech
+                    var posName = (meaning.PartOfSpeech ?? "").Trim();
+                    var pos = await _db.PartsOfSpeech.FirstOrDefaultAsync(p => p.Name.ToLower() == posName.ToLower());
+                    if (pos == null)
+                    {
+                        // fallback to Noun if not matched
+                        pos = await _db.PartsOfSpeech.FirstOrDefaultAsync(p => p.Name == "Noun");
+                    }
+
+                    foreach (var def in meaning.Definitions)
+                    {
+                        var wd = new WordDefinition
+                        {
+                            WordId = newWord.Id,
+                            PartOfSpeechId = pos?.Id ?? 1,
+                            Definition = def.DefinitionText,
+                            Example = def.Example,
+                            DisplayOrder = order++
+                        };
+                        _db.WordDefinitions.Add(wd);
+                    }
+                }
+
+                await _db.SaveChangesAsync();
+
+                // Reload with relationships for DTO mapping
+                var saved = await _db.Words
+                    .Include(w => w.WordDefinitions)
+                        .ThenInclude(d => d.PartOfSpeech)
+                    .FirstAsync(w => w.Id == newWord.Id);
+
+                var savedDto = MapToDto(saved);
+                var response = new WordLookupResponse
                 {
                     Success = true,
-                    Word = existingWord,
-                    WasFoundInCache = true
+                    Word = savedDto,
+                    WasFoundInCache = false
                 };
+                return ServiceResult<object>.Success(response);
             }
-
-            // Not in cache, call external API
-            _logger.LogInformation("Word '{Word}' not in cache, calling external API", word);
-            var apiResponse = await CallDictionaryApiAsync(normalizedWord);
-            
-            if (apiResponse == null)
+            catch (Exception ex)
             {
-                return new WordLookupResponse
+                _logger.LogError(ex, "LookupWordAsync failed for '{Word}'", term);
+                return ServiceResult<object>.Failure("Internal server error");
+            }
+        }
+
+        public async Task<ServiceResult<object>> AddWordAsync(AddWordRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Word))
+                return ServiceResult<object>.Failure("Word is required.");
+
+            try
+            {
+                // Ensure canonical word exists; if not, create a minimal entry
+                var word = await _db.Words.FirstOrDefaultAsync(w => w.Text == request.Word);
+                if (word == null)
                 {
-                    Success = false,
-                    ErrorMessage = $"Word '{word}' not found in dictionary"
-                };
-            }
-
-            // Save to local database and return
-            var savedWord = await SaveWordToDatabaseAsync(apiResponse);
-            
-            return new WordLookupResponse
-            {
-                Success = true,
-                Word = savedWord,
-                WasFoundInCache = false
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error looking up word '{Word}'", word);
-            return new WordLookupResponse
-            {
-                Success = false,
-                ErrorMessage = "An error occurred while looking up the word"
-            };
-        }
-    }
-
-    public async Task<WordDto?> GetWordFromCacheAsync(string word)
-    {
-        var normalizedWord = word.Trim().ToLowerInvariant();
-        
-        var wordEntity = await _context.Words
-            .Include(w => w.WordDefinitions)
-            .ThenInclude(wd => wd.PartOfSpeech)
-            .FirstOrDefaultAsync(w => w.Text == normalizedWord);
-
-        if (wordEntity == null)
-            return null;
-
-        return MapWordToDto(wordEntity);
-    }
-
-    public async Task<List<WordDto>> SearchWordsAsync(string searchTerm, int maxResults = 50)
-    {
-        var normalizedTerm = searchTerm.Trim().ToLowerInvariant();
-        
-        var words = await _context.Words
-            .Include(w => w.WordDefinitions)
-            .ThenInclude(wd => wd.PartOfSpeech)
-            .Where(w => w.Text.Contains(normalizedTerm))
-            .OrderBy(w => w.Text)
-            .Take(maxResults)
-            .ToListAsync();
-
-        return words.Select(MapWordToDto).ToList();
-    }
-
-    public async Task<object> GetWordStatisticsAsync()
-    {
-        var totalWords = await _context.Words.CountAsync();
-        var totalDefinitions = await _context.WordDefinitions.CountAsync();
-        var partOfSpeechStats = await _context.WordDefinitions
-            .GroupBy(wd => wd.PartOfSpeech.Name)
-            .Select(g => new { PartOfSpeech = g.Key, Count = g.Count() })
-            .OrderByDescending(x => x.Count)
-            .ToListAsync();
-
-        return new
-        {
-            TotalWords = totalWords,
-            TotalDefinitions = totalDefinitions,
-            PartOfSpeechBreakdown = partOfSpeechStats
-        };
-    }
-
-    private async Task<DictionaryApiResponse?> CallDictionaryApiAsync(string word)
-    {
-        try
-        {
-            var url = $"{DictionaryApiBaseUrl}/{word}";
-            _logger.LogDebug("Calling dictionary API: {Url}", url);
-            
-            var response = await _httpClient.GetAsync(url);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("Dictionary API returned {StatusCode} for word '{Word}'", response.StatusCode, word);
-                return null;
-            }
-
-            var jsonContent = await response.Content.ReadAsStringAsync();
-            var apiResponses = JsonSerializer.Deserialize<DictionaryApiResponse[]>(jsonContent, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-
-            return apiResponses?.FirstOrDefault();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error calling dictionary API for word '{Word}'", word);
-            return null;
-        }
-    }
-
-    private async Task<WordDto> SaveWordToDatabaseAsync(DictionaryApiResponse apiResponse)
-    {
-        using var transaction = await _context.Database.BeginTransactionAsync();
-        
-        try
-        {
-            // Create the Word entity
-            var wordEntity = new Word
-            {
-                Text = apiResponse.Word.ToLowerInvariant(),
-                Pronunciation = apiResponse.Phonetic,
-                CreatedAt = DateTime.UtcNow,
-                LastUpdatedFromApi = DateTime.UtcNow
-            };
-
-            _context.Words.Add(wordEntity);
-            await _context.SaveChangesAsync(); // Save to get the Word ID
-
-            // Create WordDefinition entities
-            var displayOrder = 1;
-            foreach (var meaning in apiResponse.Meanings)
-            {
-                // Find or create the PartOfSpeech
-                var partOfSpeech = await _context.PartsOfSpeech
-                    .FirstOrDefaultAsync(pos => pos.Name.ToLower() == meaning.PartOfSpeech.ToLower());
-
-                if (partOfSpeech == null)
-                {
-                    // Create new part of speech if not found
-                    partOfSpeech = new PartOfSpeech
-                    {
-                        Name = meaning.PartOfSpeech,
-                        Abbreviation = GetPartOfSpeechAbbreviation(meaning.PartOfSpeech),
-                        CreatedAt = DateTime.UtcNow
-                    };
-                    _context.PartsOfSpeech.Add(partOfSpeech);
-                    await _context.SaveChangesAsync();
+                    word = new Word { Text = request.Word!, Pronunciation = request.Pronunciation };
+                    _db.Words.Add(word);
+                    await _db.SaveChangesAsync();
                 }
 
-                // Add definitions for this part of speech
-                foreach (var definition in meaning.Definitions)
+                // Optionally add a canonical definition if provided
+                if (!string.IsNullOrWhiteSpace(request.Definition))
                 {
-                    var wordDefinition = new WordDefinition
+                    var pos = await ResolvePartOfSpeechAsync(request.PartOfSpeech);
+                    var def = new WordDefinition
                     {
-                        WordId = wordEntity.Id,
-                        PartOfSpeechId = partOfSpeech.Id,
-                        Definition = definition.DefinitionText,
-                        Example = definition.Example,
-                        DisplayOrder = displayOrder++,
-                        CreatedAt = DateTime.UtcNow
+                        WordId = word.Id,
+                        PartOfSpeechId = pos.Id,
+                        Definition = request.Definition!,
+                        Example = request.Example,
+                        DisplayOrder = 1
                     };
-
-                    _context.WordDefinitions.Add(wordDefinition);
+                    _db.WordDefinitions.Add(def);
+                    await _db.SaveChangesAsync();
                 }
+
+                return ServiceResult<object>.Success(new { message = "Word added successfully", wordId = word.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding word '{Word}'", request.Word);
+                return ServiceResult<object>.Failure("Failed to add word");
+            }
+        }
+
+        public async Task<ServiceResult<object>> AddToVocabularyAsync(int userId, AddWordRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Word))
+                return ServiceResult<object>.Failure("Word is required.");
+
+            try
+            {
+                // Ensure canonical word exists
+                var word = await _db.Words.FirstOrDefaultAsync(w => w.Text == request.Word);
+                if (word == null)
+                {
+                    // Create minimal canonical entry
+                    word = new Word { Text = request.Word!, Pronunciation = request.Pronunciation };
+                    _db.Words.Add(word);
+                    await _db.SaveChangesAsync();
+                }
+
+                var pos = await ResolvePartOfSpeechAsync(request.PartOfSpeech);
+
+                // Check if already exists for this user/word/part-of-speech
+                var exists = await _db.UserWords
+                    .AnyAsync(uw => uw.UserId == userId && uw.WordId == word.Id && uw.PartOfSpeechId == pos.Id);
+                if (exists)
+                {
+                    return ServiceResult<object>.Success(new { message = "Word already in your vocabulary" });
+                }
+
+                var userWord = new UserWord
+                {
+                    UserId = userId,
+                    WordId = word.Id,
+                    PartOfSpeechId = pos.Id,
+                    // CreatedAt, CustomDefinition, IsFavorite, DifficultyLevel are not mapped in DB currently
+                    // Use AddedAt (mapped) for timestamp
+                    AddedAt = DateTime.UtcNow,
+                    PersonalNotes = null,
+                    TotalAttempts = 0,
+                    CorrectAnswers = 0
+                };
+                _db.UserWords.Add(userWord);
+                await _db.SaveChangesAsync();
+
+                return ServiceResult<object>.Success(new { message = "Word added to your vocabulary", wordId = word.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding word to vocabulary for user {UserId}: '{Word}'", userId, request.Word);
+                return ServiceResult<object>.Failure("Failed to add to vocabulary");
+            }
+        }
+
+        private async Task<PartOfSpeech> ResolvePartOfSpeechAsync(string? partOfSpeech)
+        {
+            if (string.IsNullOrWhiteSpace(partOfSpeech))
+            {
+                return await _db.PartsOfSpeech.FirstAsync(p => p.Name == "Noun");
             }
 
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            _logger.LogInformation("Successfully saved word '{Word}' to database with {DefinitionCount} definitions", 
-                apiResponse.Word, apiResponse.Meanings.SelectMany(m => m.Definitions).Count());
-
-            // Return the saved word
-            return await GetWordFromCacheAsync(apiResponse.Word) ?? throw new InvalidOperationException("Failed to retrieve saved word");
+            var normalized = partOfSpeech.Trim();
+            var pos = await _db.PartsOfSpeech.FirstOrDefaultAsync(p => p.Name.ToLower() == normalized.ToLower()
+                                                                       || p.Abbreviation.ToLower() == normalized.ToLower());
+            if (pos != null) return pos;
+            return await _db.PartsOfSpeech.FirstAsync(p => p.Name == "Noun");
         }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Error saving word '{Word}' to database", apiResponse.Word);
-            throw;
-        }
-    }
 
-    private static WordDto MapWordToDto(Word word)
-    {
-        return new WordDto
+        private static WordDto MapToDto(Word word)
         {
-            Id = word.Id,
-            Text = word.Text,
-            Pronunciation = word.Pronunciation,
-            CreatedAt = word.CreatedAt,
-            Definitions = word.WordDefinitions
-                .OrderBy(wd => wd.DisplayOrder)
-                .Select(wd => new WordDefinitionDto
+            var dto = new WordDto
+            {
+                Id = word.Id,
+                Text = word.Text,
+                Pronunciation = word.Pronunciation,
+                CreatedAt = word.CreatedAt,
+                Definitions = new List<WordDefinitionDto>()
+            };
+
+            foreach (var d in word.WordDefinitions
+                         .OrderBy(wd => wd.PartOfSpeechId)
+                         .ThenBy(wd => wd.DisplayOrder))
+            {
+                dto.Definitions.Add(new WordDefinitionDto
                 {
-                    Id = wd.Id,
-                    Definition = wd.Definition,
-                    Example = wd.Example,
-                    PartOfSpeech = wd.PartOfSpeech.Name,
-                    PartOfSpeechAbbreviation = wd.PartOfSpeech.Abbreviation,
-                    DisplayOrder = wd.DisplayOrder
-                })
-                .ToList()
-        };
-    }
+                    Id = d.Id,
+                    Definition = d.Definition,
+                    Example = d.Example,
+                    PartOfSpeech = d.PartOfSpeech?.Name ?? string.Empty,
+                    PartOfSpeechAbbreviation = d.PartOfSpeech?.Abbreviation ?? string.Empty,
+                    DisplayOrder = d.DisplayOrder
+                });
+            }
 
-    private static string GetPartOfSpeechAbbreviation(string partOfSpeech)
-    {
-        return partOfSpeech.ToLowerInvariant() switch
-        {
-            "noun" => "n.",
-            "verb" => "v.",
-            "adjective" => "adj.",
-            "adverb" => "adv.",
-            "pronoun" => "pron.",
-            "preposition" => "prep.",
-            "conjunction" => "conj.",
-            "interjection" => "interj.",
-            _ => partOfSpeech.Substring(0, Math.Min(3, partOfSpeech.Length)) + "."
-        };
+            return dto;
+        }
     }
 }
