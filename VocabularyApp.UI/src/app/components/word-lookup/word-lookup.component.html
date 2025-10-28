@@ -80,8 +80,8 @@
             <p *ngIf="currentWord.phonetic" class="text-lg text-gray-500 mt-1">{{ currentWord.phonetic }}</p>
           </div>
           <div class="flex gap-3">
-            <button
-              class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200">
+            <!-- Place this near the displayed definitions or header for the current word -->
+            <button class="btn btn-primary" (click)="addToVocabulary()" [disabled]="!currentWord || isLoading">
               + Add to My Vocabulary
             </button>
             <button

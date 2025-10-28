@@ -197,4 +197,37 @@ export class WordLookupComponent implements OnInit {
       })
       .slice(0, 2); // Show top 2 initially
   }
+
+  // Add this method inside the WordLookupComponent class
+  addToVocabulary(): void {
+    if (!this.currentWord) {
+      console.warn('No current word to add');
+      return;
+    }
+
+    // Build payload for the backend AddWordRequest DTO
+    // We send a single "primary" definition for simplicity; you can change this to send many.
+    const firstDef = this.currentWord.partOfSpeechGroups?.[0]?.definitions?.[0];
+    const payload = {
+      word: this.currentWord.word,
+      definition: firstDef?.definition ?? '',
+      partOfSpeech: this.currentWord.partOfSpeechGroups?.[0]?.partOfSpeech ?? '',
+      example: firstDef?.example ?? ''
+    };
+
+    // Use your ApiService post helper (see next section). Endpoint path is appended to baseUrl.
+    this.apiService.post<any>('/words/vocabulary/add', payload).subscribe({
+      next: (res) => {
+        console.log('Add to vocabulary response:', res);
+        // show user feedback
+        alert('✅ Word added to your vocabulary!');
+      },
+      error: (err) => {
+        console.error('Error adding word:', err);
+        const msg = err?.error?.message || err?.error?.errorMessage || 'Failed to add word';
+        alert('❌ ' + msg);
+      }
+    });
+  }
+
 }
