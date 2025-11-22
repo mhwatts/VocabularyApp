@@ -105,5 +105,39 @@ namespace VocabularyApp.WebApi.Controllers
                 return StatusCode(500, new { success = false, error = "Internal server error" });
             }
         }
+
+        /// <summary>
+        /// Get user's vocabulary list with pagination
+        /// GET: /api/words/vocabulary?page=1&pageSize=20
+        /// </summary>
+        [HttpGet("vocabulary")]
+        [Authorize]
+        public async Task<IActionResult> GetUserVocabulary([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userIdClaim == null || !int.TryParse(userIdClaim, out var userId))
+                {
+                    return Unauthorized(new { success = false, error = "Invalid token" });
+                }
+
+                if (page < 1) page = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 20;
+
+                var result = await _wordService.GetUserVocabularyAsync(userId, page, pageSize);
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new { success = false, error = result.Message ?? "Failed to retrieve vocabulary." });
+                }
+
+                return Ok(new { success = true, data = result.Data });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving user vocabulary");
+                return StatusCode(500, new { success = false, error = "Internal server error" });
+            }
+        }
     }
 }

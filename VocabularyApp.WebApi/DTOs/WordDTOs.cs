@@ -5,6 +5,7 @@ public class WordDto
     public int Id { get; set; }
     public string Text { get; set; } = string.Empty;
     public string? Pronunciation { get; set; }
+    public string? AudioUrl { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<WordDefinitionDto> Definitions { get; set; } = new();
 }

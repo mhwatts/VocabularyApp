@@ -1,0 +1,76 @@
+/* Toast Notifications Styles */
+.toast-notification {
+  animation: slideInRight 0.3s ease-out;
+  backdrop-filter: blur(8px);
+
+  &.toast-success {
+    background-color: rgba(16, 185, 129, 0.95);
+    color: white;
+    border-left: 4px solid #10b981;
+  }
+
+  &.toast-error {
+    background-color: rgba(239, 68, 68, 0.95);
+    color: white;
+    border-left: 4px solid #ef4444;
+  }
+
+  &.toast-info {
+    background-color: rgba(59, 130, 246, 0.95);
+    color: white;
+    border-left: 4px solid #3b82f6;
+  }
+
+  &.toast-warning {
+    background-color: rgba(245, 158, 11, 0.95);
+    color: white;
+    border-left: 4px solid #f59e0b;
+  }
+
+  button {
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Hover effects */
+.toast-notification:hover {
+  transform: scale(1.02);
+  transition: transform 0.1s ease-in-out;
+}

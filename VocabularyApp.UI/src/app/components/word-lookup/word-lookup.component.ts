@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { Router } from '@angular/router';
-import { WordLookupResult, PartOfSpeechGroup, SearchSuggestion, POS_PRIORITY } from '../../models/word-lookup.model';
+import { WordLookupResult, PartOfSpeechGroup, SearchSuggestion, POS_PRIORITY, VocabularyResponse } from '../../models/word-lookup.model';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-word-lookup',
@@ -22,7 +23,12 @@ export class WordLookupComponent implements OnInit {
   currentWord: WordLookupResult | null = null;
   sortedGroups: PartOfSpeechGroup[] = [];
 
-  constructor(private apiService: ApiService, private router: Router) { }
+  // Vocabulary list properties
+  showVocabularyList = false;
+  vocabularyLoading = false;
+  vocabularyResponse: VocabularyResponse | null = null;
+
+  constructor(private apiService: ApiService, private router: Router, public toastService: ToastService) { }
 
   backToDashboard(): void {
     this.router.navigate(['/dashboard']);
@@ -31,6 +37,13 @@ export class WordLookupComponent implements OnInit {
   ngOnInit(): void { }
 
   onSearchInput(): void {
+    // Clear previous word definition as soon as user starts typing
+    if (this.currentWord) {
+      this.currentWord = null;
+      this.sortedGroups = [];
+      this.errorMessage = '';
+    }
+
     if (this.searchTerm.length >= 2) {
       this.searchUserVocabulary(this.searchTerm);
     } else {
@@ -88,6 +101,7 @@ export class WordLookupComponent implements OnInit {
               const mapped: WordLookupResult = {
                 word: wordDto.text || word,
                 phonetic: wordDto.pronunciation,
+                audioUrl: wordDto.audioUrl,
                 source: lookupResp.wasFoundInCache ? 'user' : 'canonical',
                 partOfSpeechGroups: []
               } as any;
@@ -219,14 +233,62 @@ export class WordLookupComponent implements OnInit {
     this.apiService.post<any>('/words/vocabulary/add', payload).subscribe({
       next: (res) => {
         console.log('Add to vocabulary response:', res);
-        // show user feedback
-        alert('✅ Word added to your vocabulary!');
+        // show user feedback with toast
+        this.toastService.success(`Word "${this.currentWord?.word}" added to your vocabulary!`);
       },
       error: (err) => {
         console.error('Error adding word:', err);
         const msg = err?.error?.message || err?.error?.errorMessage || 'Failed to add word';
-        alert('❌ ' + msg);
+        this.toastService.error(msg);
       }
+    });
+  }
+
+  // Vocabulary list methods
+  toggleVocabularyView(): void {
+    this.showVocabularyList = !this.showVocabularyList;
+    if (this.showVocabularyList && !this.vocabularyResponse) {
+      this.loadVocabularyPage(1);
+    }
+    // Clear current word when switching to vocabulary view
+    if (this.showVocabularyList) {
+      this.currentWord = null;
+      this.errorMessage = '';
+    }
+  }
+
+  loadVocabularyPage(page: number): void {
+    if (page < 1) return;
+
+    this.vocabularyLoading = true;
+    this.apiService.get<any>(`/words/vocabulary?page=${page}&pageSize=20`).subscribe({
+      next: (res) => {
+        if (res && res.success && res.data) {
+          this.vocabularyResponse = res.data;
+        } else {
+          console.error('Invalid vocabulary response format:', res);
+          this.vocabularyResponse = { words: [], totalCount: 0, page: 1, pageSize: 20, totalPages: 0 };
+        }
+        this.vocabularyLoading = false;
+      },
+      error: (err) => {
+        console.error('Error loading vocabulary:', err);
+        this.vocabularyLoading = false;
+        // Show empty state or error message
+        this.vocabularyResponse = { words: [], totalCount: 0, page: 1, pageSize: 20, totalPages: 0 };
+      }
+    });
+  }
+
+  playAudio(audioUrl: string): void {
+    if (!audioUrl) {
+      console.warn('No audio URL available');
+      return;
+    }
+
+    const audio = new Audio(audioUrl);
+    audio.play().catch(error => {
+      console.error('Failed to play audio:', error);
     });
   }
 

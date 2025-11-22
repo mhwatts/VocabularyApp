@@ -64,11 +64,17 @@ namespace VocabularyApp.WebApi.Services
                 }
 
                 var first = apiData[0];
+
+                // Extract audio URL from phonetics array
+                var audioUrl = first.Phonetics?
+                    .FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.Audio))?.Audio;
+
                 // Create canonical Word
                 var newWord = new Word
                 {
                     Text = first.Word ?? normalized,
-                    Pronunciation = first.Phonetic
+                    Pronunciation = first.Phonetic,
+                    AudioUrl = audioUrl
                 };
                 _db.Words.Add(newWord);
                 await _db.SaveChangesAsync();
@@ -230,6 +236,64 @@ namespace VocabularyApp.WebApi.Services
             return await _db.PartsOfSpeech.FirstAsync(p => p.Name == "Noun");
         }
 
+        public async Task<ServiceResult<UserVocabularyResponseDto>> GetUserVocabularyAsync(int userId, int page = 1, int pageSize = 20)
+        {
+            try
+            {
+                var query = _db.UserWords
+                    .Include(uw => uw.Word)
+                        .ThenInclude(w => w.WordDefinitions)
+                    .Include(uw => uw.PartOfSpeech)
+                    .Where(uw => uw.UserId == userId)
+                    .OrderBy(uw => uw.Word.Text);
+
+                var totalCount = await query.CountAsync();
+                var items = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var vocabularyItems = items.Select(uw =>
+                {
+                    // Get the primary definition for this part of speech
+                    var definition = uw.Word.WordDefinitions
+                        .Where(wd => wd.PartOfSpeechId == uw.PartOfSpeechId)
+                        .OrderBy(wd => wd.DisplayOrder)
+                        .FirstOrDefault();
+
+                    return new UserVocabularyItemDto
+                    {
+                        Id = uw.Id,
+                        Word = uw.Word.Text,
+                        Definition = definition?.Definition ?? "No definition available",
+                        Example = definition?.Example,
+                        PartOfSpeech = uw.PartOfSpeech?.Name ?? "Unknown",
+                        Pronunciation = uw.Word.Pronunciation,
+                        AudioUrl = uw.Word.AudioUrl,
+                        AddedAt = uw.AddedAt,
+                        PersonalNotes = uw.PersonalNotes,
+                        CorrectAnswers = uw.CorrectAnswers,
+                        TotalAttempts = uw.TotalAttempts
+                    };
+                }).ToList();
+
+                var response = new UserVocabularyResponseDto
+                {
+                    Words = vocabularyItems,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize
+                };
+
+                return ServiceResult<UserVocabularyResponseDto>.Success(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving user vocabulary for userId {UserId}", userId);
+                return ServiceResult<UserVocabularyResponseDto>.Failure("Failed to retrieve vocabulary list");
+            }
+        }
+
         private static WordDto MapToDto(Word word)
         {
             var dto = new WordDto
@@ -237,6 +301,7 @@ namespace VocabularyApp.WebApi.Services
                 Id = word.Id,
                 Text = word.Text,
                 Pronunciation = word.Pronunciation,
+                AudioUrl = word.AudioUrl,
                 CreatedAt = word.CreatedAt,
                 Definitions = new List<WordDefinitionDto>()
             };
