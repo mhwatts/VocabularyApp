@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace VocabularyApp.Data.Models;
 
@@ -8,6 +9,8 @@ public class UserWord
 
     public int UserId { get; set; }
     public int WordId { get; set; }
+    [NotMapped]
+    public DateTime CreatedAt { get; set; }
     // Removed PartOfSpeechId, CustomDefinition, IsFavorite, DifficultyLevel per schema change
     [StringLength(500)]
     public string? PersonalNotes { get; set; } // User's personal notes about the word
@@ -26,5 +29,18 @@ public class UserWord
     public virtual User User { get; set; } = null!;
     public virtual Word Word { get; set; } = null!;
     // Removed PartOfSpeech navigation
+
+    public int PartOfSpeechId { get; set; }
+
+    [NotMapped]
+    [StringLength(1000)]
+    public string? CustomDefinition { get; set; } // User's personalized definition (optional)
+
+    [NotMapped]
+    public bool IsFavorite { get; set; } = false;
+    [NotMapped]
+    public int DifficultyLevel { get; set; } = 1; // 1-5 scale for spaced repetition
+
+    public virtual PartOfSpeech PartOfSpeech { get; set; } = null!;
     public virtual ICollection<SampleSentence> SampleSentences { get; set; } = new List<SampleSentence>();
 }

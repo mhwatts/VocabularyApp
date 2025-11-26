@@ -17,6 +17,7 @@ export interface PartOfSpeechGroup {
 export interface WordLookupResult {
   word: string;
   phonetic?: string;
+  audioUrl?: string;
   partOfSpeechGroups: PartOfSpeechGroup[];
   source: 'user' | 'canonical' | 'external';
 }
@@ -41,3 +42,27 @@ export const POS_PRIORITY = {
   'determiner': 9,
   'exclamation': 10
 } as const;
+
+// Vocabulary list interfaces
+export interface VocabularyItem {
+  id: number;
+  word: string;
+  definition: string;
+  example?: string;
+  partOfSpeech: string;
+  pronunciation?: string;
+  audioUrl?: string;
+  addedAt: string;
+  personalNotes?: string;
+  correctAnswers: number;
+  totalAttempts: number;
+  accuracyRate?: number;
+}
+
+export interface VocabularyResponse {
+  words: VocabularyItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
