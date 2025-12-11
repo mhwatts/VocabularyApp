@@ -280,7 +280,7 @@ namespace VocabularyApp.Data.Migrations
                     b.Property<DateTime?>("LastReviewedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("PartOfSpeechId")
+                    b.Property<int?>("PartOfSpeechId")
                         .HasColumnType("int");
 
                     b.Property<string>("PersonalNotes")
@@ -300,10 +300,9 @@ namespace VocabularyApp.Data.Migrations
 
                     b.HasIndex("PartOfSpeechId");
 
-                    b.HasIndex("WordId");
+                    b.HasIndex("UserId");
 
-                    b.HasIndex("UserId", "WordId", "PartOfSpeechId")
-                        .IsUnique();
+                    b.HasIndex("WordId");
 
                     b.ToTable("UserWords");
                 });
@@ -433,11 +432,9 @@ namespace VocabularyApp.Data.Migrations
 
             modelBuilder.Entity("VocabularyApp.Data.Models.UserWord", b =>
                 {
-                    b.HasOne("VocabularyApp.Data.Models.PartOfSpeech", "PartOfSpeech")
+                    b.HasOne("VocabularyApp.Data.Models.PartOfSpeech", null)
                         .WithMany("UserWords")
-                        .HasForeignKey("PartOfSpeechId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("PartOfSpeechId");
 
                     b.HasOne("VocabularyApp.Data.Models.User", "User")
                         .WithMany("UserWords")
@@ -450,8 +447,6 @@ namespace VocabularyApp.Data.Migrations
                         .HasForeignKey("WordId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("PartOfSpeech");
 
                     b.Navigation("User");
 
