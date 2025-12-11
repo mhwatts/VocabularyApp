@@ -52,22 +52,42 @@ export class WordLookupComponent implements OnInit {
   }
 
   searchUserVocabulary(term: string): void {
-    // TODO: Implement user vocabulary search for autocomplete
-    // For now, mock some suggestions
-    this.suggestions = [
-      {
-        word: 'hello',
-        type: 'existing',
-        partOfSpeech: 'noun, interjection',
-        preview: 'A greeting or expression of goodwill',
-        action: 'Review word'
+    // Search user's vocabulary for autocomplete suggestions
+    this.apiService.get<any>(`/words/vocabulary/search?term=${encodeURIComponent(term)}`).subscribe({
+      next: (res) => {
+        this.suggestions = [];
+
+        // Add existing words from user's vocabulary
+        if (res?.data?.words && Array.isArray(res.data.words)) {
+          const existingSuggestions = res.data.words.slice(0, 5).map((item: any) => ({
+            word: item.word,
+            type: 'existing' as const,
+            partOfSpeech: item.partOfSpeech || 'unknown',
+            preview: item.definition?.substring(0, 60) || '',
+            action: 'Review word'
+          }));
+          this.suggestions.push(...existingSuggestions);
+        }
+
+        // Always add option to search dictionary
+        this.suggestions.push({
+          word: term,
+          type: 'new-search',
+          action: 'Search dictionary'
+        });
       },
-      {
-        word: term,
-        type: 'new-search',
-        action: 'Search dictionary'
+      error: (err) => {
+        console.error('Error searching vocabulary:', err);
+        // On error, just show search dictionary option
+        this.suggestions = [
+          {
+            word: term,
+            type: 'new-search',
+            action: 'Search dictionary'
+          }
+        ];
       }
-    ];
+    });
   }
 
   selectSuggestion(suggestion: SearchSuggestion): void {
@@ -80,8 +100,53 @@ export class WordLookupComponent implements OnInit {
   }
 
   viewExistingWord(word: string): void {
-    // TODO: Get word from user's vocabulary
-    console.log('Viewing existing word:', word);
+    // Fetch word from user's vocabulary
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.currentWord = null;
+
+    this.apiService.get<any>(`/words/vocabulary?word=${encodeURIComponent(word)}`).subscribe({
+      next: (res) => {
+        if (res?.data?.words && res.data.words.length > 0) {
+          const userWord = res.data.words[0];
+          // Map the user's vocabulary word to WordLookupResult format
+          const mapped: WordLookupResult = {
+            word: userWord.word,
+            phonetic: userWord.phonetic,
+            partOfSpeechGroups: [
+              {
+                partOfSpeech: userWord.partOfSpeech || 'unknown',
+                priority: 1,
+                definitions: [
+                  {
+                    definition: userWord.definition || userWord.originalDefinition || '',
+                    example: userWord.example || userWord.originalExample
+                  }
+                ],
+                isExpanded: false,
+                primaryDefinitions: [
+                  {
+                    definition: userWord.definition || userWord.originalDefinition || '',
+                    example: userWord.example || userWord.originalExample
+                  }
+                ]
+              }
+            ],
+            source: 'user'
+          };
+          this.currentWord = mapped;
+          this.processWordResult(this.currentWord);
+        } else {
+          this.errorMessage = 'Word not found in your vocabulary.';
+        }
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error fetching word from vocabulary:', err);
+        this.errorMessage = 'Failed to load word from your vocabulary.';
+        this.isLoading = false;
+      }
+    });
   }
 
   searchNewWord(word: string): void {
